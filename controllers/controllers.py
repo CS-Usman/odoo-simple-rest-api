@@ -4,12 +4,13 @@ from odoo import http
 from odoo.http import request, Response
 
 
-def error_response(code, message):
-    return {
+def error_response(status_code, message):
+    response_data = {
         "success": False,
-        "status": code,
-        "error": message
+        "message": message
     }
+    return Response(json.dumps(response_data), status=status_code, content_type='application/json')
+
 
 
 def format_query(query):
@@ -20,7 +21,7 @@ def format_query(query):
 
 
 class Restapi(http.Controller):
-    @http.route('/restapi', auth='public')
+    @http.route('/restapi', auth='public',methods=['GET'])
     def index(self, **kw):
         return "Server up and running"
 
@@ -118,19 +119,17 @@ class Restapi(http.Controller):
 
     @http.route('/restapi/delete/<int:id>', auth='user', csrf=False, methods=['DELETE'])
     def delete_record(self, id, **params):
-
         try:
             if not id:
                 return error_response(400, "No id in query path")
 
-            delete_rec = request.env['hospital.patient'].browse(id).unlink()
+            delete_rec = request.env['hospital.patient'].browse(id)
 
             if not delete_rec:
                 return error_response(400, "Id not exists")
-
+            delete_rec.unlink()
             return Response(json.dumps({"success": True, "message": "successfully deleted"}, default=str), status=200,
                             content_type='application/json')
-
 
         except Exception as e:
             return error_response(500, f"Server error: {str(e)}")
